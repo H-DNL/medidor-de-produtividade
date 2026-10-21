@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Medidor de Produtividade</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f5f1;--surf:#fff;--tx:#1d2420;--mut:#65706a;--bd:#e2e0d8;--ac:#1f7a5a;--acs:#e0f1ea;--ok:#1f7a5a;--wa:#b7791f;--bad:#c0392b;--bar:#d9ded9}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14181a;--surf:#1d2326;--tx:#e9eeea;--mut:#9aa5a0;--bd:#2c3438;--ac:#4cc79a;--acs:#1f3a31;--ok:#4cc79a;--wa:#e0aa4a;--bad:#ef7b6e;--bar:#33403b}}
+:root[data-theme="dark"]{--bg:#14181a;--surf:#1d2326;--tx:#e9eeea;--mut:#9aa5a0;--bd:#2c3438;--ac:#4cc79a;--acs:#1f3a31;--ok:#4cc79a;--wa:#e0aa4a;--bad:#ef7b6e;--bar:#33403b}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.w{max-width:960px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0}h2{font-size:16px;margin:24px 0 10px}
+.sub{color:var(--mut);margin:2px 0 16px}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;margin:14px 0;flex-wrap:wrap}
+.tabs button{border:1px solid var(--bd);background:var(--surf);color:var(--tx);padding:8px 14px;border-radius:999px;cursor:pointer;font:inherit}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.card{background:var(--surf);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.k{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.v{font-size:24px;font-weight:650;margin-top:2px}
+.sc{overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:var(--surf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;min-width:640px}
+th,td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.ok{background:var(--acs);color:var(--ok)}.wa{background:rgba(224,170,74,.18);color:var(--wa)}.bad{background:rgba(239,123,110,.18);color:var(--bad)}
+.pb{height:6px;background:var(--bar);border-radius:6px;margin-top:5px;min-width:90px}.pb i{display:block;height:100%;border-radius:6px;background:var(--ac)}
+form{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:3px}
+input,select{font:inherit;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--surf);color:var(--tx);min-width:120px}
+.btn{background:var(--ac);color:#fff;border:0;padding:9px 16px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600}
+.btn.g{background:transparent;color:var(--mut);border:1px solid var(--bd)}
+.x{background:none;border:0;color:var(--bad);cursor:pointer;font-size:16px}
+.rec h3{margin:0 0 6px;font-size:15px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.rec ul{margin:6px 0 0;padding-left:18px}.rec li{margin:3px 0}
+.chart{display:flex;align-items:flex-end;gap:3px;height:110px;margin-top:8px}
+.chart div{flex:1;background:var(--ac);border-radius:3px 3px 0 0;min-height:2px;opacity:.85}
+.empty{color:var(--mut);padding:24px;text-align:center}
+.hid{display:none}
+.al{border-left:4px solid var(--wa);margin:10px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ck{flex-direction:row;align-items:center;gap:6px;font-size:14px;color:var(--tx)}.ck input{min-width:0}
+@media print{.tabs,form,.btn,.x,#lanc,#func,#metas,.noprint{display:none!important}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="top">
+    <div><h1>Medidor de Produtividade</h1><p class="sub">Quanto cada pessoa gera por hora, por dia e por mês, e o que fazer para melhorar.</p></div>
+    <div class='row'><label>Mês de análise<input type='month' id='mes'></label><label class='ck noprint'><input type='checkbox' id='ig'> Ignorar dias de baixo movimento</label><button class='btn g noprint' id='pr'>Relatório (PDF)</button></div>
+  </div>
+  <div class="tabs" id="tabs">
+    <button data-t="resumo" class="on">Resumo</button>
+    <button data-t="lanc">Lançamentos</button>
+    <button data-t='metas'>Metas e ações</button><button data-t='func'>Equipe</button>
+  </div>
+
+  <section id="resumo"></section>
+
+  <section id="lanc" class="hid">
+    <div class="card"><form id="fl">
+      <label>Funcionário<select id="le"></select></label>
+      <label>Data<input type="date" id="ld" required></label>
+      <label>Entrada<input type='time' id='ti'></label><label>Saída<input type='time' id='ts'></label><label>Horas trabalhadas<input type='number' id='lh' min='0.25' step='0.25' required></label>
+      <label>Valor gerado (R$)<input type='number' id='lv' min='0' step='0.01' required></label><label>Quantidade (opcional)<input type='number' id='lq' min='0' step='1'></label><label>Qualidade 1 a 5<select id='lk'><option value=''>–</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></label><label class='ck'><input type='checkbox' id='lb'> Baixo movimento</label>
+      <button class="btn">Adicionar</button>
+    </form>
+    <p class="sub" style="margin:10px 0 0">“Valor gerado” = vendas, serviços faturados ou receita atribuída à pessoa no dia.</p></div>
+    <h2>Exportar e importar</h2><div class='card'><div class='row'><button type='button' class='btn g' id='exc'>Exportar CSV</button><button type='button' class='btn g' id='exj'>Backup (JSON)</button><button type='button' class='btn' id='imc'>Importar do texto</button><input type='file' id='fi' accept='.csv,.json,.txt'></div><textarea id='tx' rows='4' placeholder='Exportar mostra o conteúdo aqui para copiar. Para importar, cole um CSV (funcionario;data;horas;valor;quantidade;qualidade;baixo_movimento) ou um backup JSON e clique em Importar.' style='width:100%;margin-top:8px;font:12px monospace;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--surf);color:var(--tx)'></textarea></div><h2>Registros do mês</h2><div class="sc" id="ll"></div>
+  </section>
+
+  <section id='metas' class='hid'><h2 style='margin-top:0'>Metas com prazo</h2><div class='card'><form id='fm'><label>Funcionário<select id='me' class='se'></select></label><label>Meta (R$/hora)<input type='number' id='mt' min='1' step='0.01' required></label><label>Prazo<input type='date' id='mp' required></label><button class='btn'>Criar meta</button></form></div><div class='sc' id='ml' style='margin-top:10px'></div><h2>Ações tomadas e efeito</h2><div class='card'><form id='fa'><label>Funcionário<select id='ae' class='se'></select></label><label>Data<input type='date' id='ad' required></label><label style='flex:1'>Ação (treinamento, mudança de rotina...)<input id='at' required></label><button class='btn'>Registrar</button></form><p class='sub' style='margin:10px 0 0'>O efeito compara o R$/hora dos 30 dias antes e dos 30 dias depois da data da ação.</p></div><div class='sc' id='al2' style='margin-top:10px'></div></section>
+  <section id="func" class="hid">
+    <div class="card"><form id="ff">
+      <label>Nome<input id="fn" required></label>
+      <label>Função<input id="fr"></label>
+      <label>Custo por hora (R$)<input type="number" id="fc" min="0" step="0.01" required></label>
+      <label>Meta de geração (R$/hora)<input type="number" id="fg" min="1" step="0.01" required></label>
+      <button class="btn">Cadastrar</button>
+    </form>
+    <p class="sub" style="margin:10px 0 0">Custo por hora = salário + encargos ÷ horas mensais. A meta deve ficar acima do custo para o negócio ter lucro.</p></div>
+    <h2>Equipe cadastrada</h2><div class="sc" id="fl2"></div>
+    <p style="margin-top:18px"><button class="btn g" id="demo">Carregar dados de exemplo</button> <button class="btn g" id="clr">Apagar tudo</button></p>
+  </section>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const brl=n=>(isFinite(n)?n:0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const num=(n,d=1)=>(isFinite(n)?n:0).toLocaleString('pt-BR',{maximumFractionDigits:d});
+let S={emps:[],logs:[]};
+try{const r=localStorage.getItem('prod-v1');if(r)S=JSON.parse(r)}catch(e){}
+const save=()=>{try{localStorage.setItem('prod-v1',JSON.stringify(S))}catch(e){}};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const today=new Date().toISOString().slice(0,10);
+$('#mes').value=today.slice(0,7);$('#ld').value=today;
+const mes=()=>$('#mes').value;
+const inMes=l=>l.date.startsWith(mes());
+
+function metrics(e,mm=mes()){
+  const L=S.logs.filter(l=>l.emp===e.id&&l.date.startsWith(mm)&&!(S.ign&&l.low)).sort((a,b)=>a.date<b.date?-1:1);
+  const h=L.reduce((a,l)=>a+l.hours,0),v=L.reduce((a,l)=>a+l.value,0);
+  const days={};L.forEach(l=>{days[l.date]=(days[l.date]||0)+l.value});
+  const nd=Object.keys(days).length;
+  const dv=Object.values(days);
+  const mean=nd?v/nd:0;
+  const cv=nd>1?Math.sqrt(dv.reduce((a,x)=>a+(x-mean)**2,0)/nd)/(mean||1):0;
+  const half=Math.floor(L.length/2);
+  const rate=a=>{const hh=a.reduce((s,l)=>s+l.hours,0);return hh?a.reduce((s,l)=>s+l.value,0)/hh:0};
+  const early=rate(L.slice(0,half)),late=rate(L.slice(half));
+  return {L,h,v,nd,ph:h?v/h:0,pd:nd?v/nd:0,hpd:nd?h/nd:0,proj:(nd?v/nd:0)*22,cv,trend:early&&L.length>=6?(late-early)/early:0,roi:e.cost&&h?v/(h*e.cost):0,days,qty:L.reduce((a,l)=>a+(l.qty||0),0),qual:(()=>{const q=L.filter(l=>l.q);return q.length?q.reduce((a,l)=>a+l.q,0)/q.length:0})(),margin:v-h*e.cost};
+}
+function recs(e,m,team){
+  if(!m.h)return[['bad','Sem registros neste mês. Lance horas e valores para medir o desempenho.']];
+  const r=[],p=m.ph/e.goal;
+  if(p>=1)r.push(['ok','Meta batida ('+num(p*100,0)+'%). Documente o que essa pessoa faz de diferente e use como padrão para o resto da equipe.']);
+  else if(p>=.8)r.push(['wa','Perto da meta: faltam '+brl(e.goal-m.ph)+' por hora. Foque em reduzir tempo ocioso e priorizar as tarefas de maior retorno.']);
+  else r.push(['bad','Abaixo da meta ('+num(p*100,0)+'%): faltam '+brl(e.goal-m.ph)+' por hora. Revise treinamento, ferramentas e se há gargalos fora do controle da pessoa.']);
+  if(m.roi&&m.roi<1)r.push(['bad','Gera menos que o próprio custo (retorno de '+num(m.roi,2)+'x). Defina meta diária clara e acompanhe semanalmente.']);
+  if(m.trend<-.1)r.push(['wa','Queda de '+num(Math.abs(m.trend)*100,0)+'% no ritmo na segunda metade do mês. Converse para entender: sobrecarga, falta de demanda ou desmotivação.']);
+  else if(m.trend>.1)r.push(['ok','Ritmo subiu '+num(m.trend*100,0)+'% ao longo do mês. Reconheça o avanço.']);
+  if(m.cv>.4)r.push(['wa','Resultado muito irregular entre os dias. Padronize a rotina (horários de pico, checklist de abertura) para ganhar consistência.']);
+  if(m.hpd>8.5&&p<1)r.push(['wa','Jornada média de '+num(m.hpd)+' h/dia com resultado abaixo da meta. Mais horas não estão virando mais valor: revise pausas e carga de trabalho.']);
+  if(team.avg&&m.ph<team.avg*.8&&team.best&&team.best.id!==e.id)r.push(['wa','Está 20% ou mais abaixo da média da equipe. Combine acompanhamento com '+team.best.name+', que tem o melhor resultado.']);
+  if(p>=1.2)r.push(['ok','Desempenho bem acima da meta: avalie novas responsabilidades, bônus ou aumentar a meta.']);
+  if(m.qual&&m.qual<4)r.push(['wa','Qualidade média de '+num(m.qual)+'/5. '+(p>=1?'A meta de valor está sendo batida à custa da qualidade?':'Treinar a qualidade do trabalho também deve elevar o resultado.')]);
+  return r.slice(0,6);
+}
+const cls=p=>p>=1?'ok':p>=.8?'wa':'bad';
+const lbl=p=>p>=1?'Na meta':p>=.8?'Atenção':'Abaixo';
+
+const prevM=mm=>{const[y,m]=mm.split('-').map(Number);const d=new Date(y,m-2,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
+const fd=d=>d.split('-').reverse().join('/');
+const sh=(d,n)=>new Date(new Date(d).getTime()+n*864e5).toISOString().slice(0,10);
+const rt=(id,a,b)=>{const L=S.logs.filter(l=>l.emp===id&&l.date>=a&&l.date<=b);const h=L.reduce((s,l)=>s+l.hours,0);return h?L.reduce((s,l)=>s+l.value,0)/h:0};
+function gs(g){const t=new Date().toISOString().slice(0,10),end=g.due<t?g.due:t,cur=rt(g.emp,sh(end,-30),end),p=g.target>g.base?Math.max(0,Math.min(1,(cur-g.base)/(g.target-g.base))):cur>=g.target?1:0;return{cur,p,st:cur>=g.target?'ok':g.due<t?'venc':'and'}}
+function vs(e,m){const p=metrics(e,prevM(mes()));if(!p.ph||!m.ph)return'–';const d=(m.ph-p.ph)/p.ph*100;return `<span style='color:var(--${d>=0?'ok':'bad'})'>${d>=0?'▲':'▼'} ${num(Math.abs(d),0)}%</span>`}
+function extra(e,m){let ms=[],mm=mes();for(let i=0;i<6;i++){ms.unshift(mm);mm=prevM(mm)}const v=ms.map(x=>metrics(e,x).ph),mx=Math.max(1,e.goal,...v);return `<p class='sub' style='margin:8px 0 0'>${m.qty?'Qtd: '+num(m.qty,0)+' · '+brl(m.v/m.qty)+' por unidade · ':''}${m.qual?'Qualidade: '+num(m.qual)+'/5 · ':''}Margem: ${brl(m.margin)}</p><div class='chart' style='height:60px'>${v.map((x,i)=>`<div title='${ms[i]}: ${brl(x)}/h' style='height:${x/mx*100}%'></div>`).join('')}</div><small style='color:var(--mut)'>Evolução em R$/hora, últimos 6 meses</small>`}
+function alertas(){const A=[],t=new Date().toISOString().slice(0,10),c3=sh(t,-3),nm=id=>(S.emps.find(e=>e.id===id)||{name:'?'}).name;
+  S.emps.forEach(e=>{const all=S.logs.filter(l=>l.emp===e.id).sort((a,b)=>a.date<b.date?-1:1);
+    if(all.length&&all[all.length-1].date<c3)A.push(e.name+': sem lançamentos desde '+fd(all[all.length-1].date)+'.');
+    const last=[...new Set(all.map(l=>l.date))].slice(-3);
+    if(last.length===3&&last.every(d=>{const x=all.filter(l=>l.date===d);return x.reduce((a,l)=>a+l.value,0)/x.reduce((a,l)=>a+l.hours,0)<e.goal}))A.push(e.name+': abaixo da meta nos últimos 3 dias lançados.')});
+  S.goals.forEach(g=>{const s=gs(g),d=(new Date(g.due)-new Date(t))/864e5;if(s.st==='venc')A.push('Meta de '+nm(g.emp)+' venceu em '+fd(g.due)+' sem ser atingida.');else if(s.st==='and'&&d<=7&&s.p<.5)A.push('Meta de '+nm(g.emp)+' vence em '+fd(g.due)+' e está em '+num(s.p*100,0)+'% do caminho.')});
+  return A.length?`<div class='card al'><b>Alertas</b><ul style='margin:6px 0 0;padding-left:18px'>${A.map(x=>`<li>${x}</li>`).join('')}</ul></div>`:''}
+function metasHtml(){const n=id=>(S.emps.find(e=>e.id===id)||{name:'?'}).name,B={ok:['ok','Atingida'],venc:['bad','Vencida'],and:['wa','Em andamento']};
+  $('#ml').innerHTML=S.goals.length?`<table><tr><th>Funcionário</th><th>Meta</th><th>Atual (30 dias)</th><th>Progresso</th><th>Prazo</th><th>Status</th><th></th></tr>${S.goals.map(g=>{const s=gs(g),b=B[s.st];return `<tr><td>${n(g.emp)}</td><td>${brl(g.target)}/h</td><td>${brl(s.cur)}/h</td><td>${num(s.p*100,0)}%<div class='pb'><i style='width:${s.p*100}%'></i></div></td><td>${fd(g.due)}</td><td><span class='pill ${b[0]}'>${b[1]}</span></td><td><button class='x' data-dg='${g.id}' aria-label='Remover'>×</button></td></tr>`}).join('')}</table>`:`<div class='card empty'>Nenhuma meta criada.</div>`;
+  $('#al2').innerHTML=S.acts.length?`<table><tr><th>Data</th><th>Funcionário</th><th style='text-align:left'>Ação</th><th>Antes (30 d)</th><th>Depois (30 d)</th><th>Efeito</th><th></th></tr>${S.acts.slice().sort((a,b)=>a.date<b.date?1:-1).map(a=>{const b=rt(a.emp,sh(a.date,-30),sh(a.date,-1)),d=rt(a.emp,a.date,sh(a.date,30)),ef=b&&d?(d-b)/b*100:null;return `<tr><td>${fd(a.date)}</td><td>${n(a.emp)}</td><td style='text-align:left;white-space:normal'>${a.text}</td><td>${b?brl(b):'–'}</td><td>${d?brl(d):'aguardando'}</td><td>${ef===null?'–':`<span style='color:var(--${ef>=0?'ok':'bad'})'>${ef>=0?'+':''}${num(ef,0)}%</span>`}</td><td><button class='x' data-da='${a.id}' aria-label='Remover'>×</button></td></tr>`}).join('')}</table>`:`<div class='card empty'>Nenhuma ação registrada.</div>`}
+function render(){
+  S.goals=S.goals||[];S.acts=S.acts||[];
+  document.querySelectorAll('.se').forEach(s=>s.innerHTML=S.emps.map(e=>`<option value='${e.id}'>${e.name}</option>`).join(''));
+  $('#le').innerHTML=S.emps.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  // resumo
+  const ms=S.emps.map(e=>({e,m:metrics(e)}));
+  const H=ms.reduce((a,x)=>a+x.m.h,0),V=ms.reduce((a,x)=>a+x.m.v,0);
+  const cost=ms.reduce((a,x)=>a+x.m.h*x.e.cost,0);
+  const withData=ms.filter(x=>x.m.h);
+  const best=withData.sort((a,b)=>b.m.ph-a.m.ph)[0];
+  const team={avg:H?V/H:0,best:best&&best.e};
+  const gAvg=S.emps.length?S.emps.reduce((a,e)=>a+e.goal,0)/S.emps.length:0;
+  let h=alertas();
+  if(!S.emps.length){h='<div class="card empty">Nenhum funcionário cadastrado. Vá em <b>Equipe</b> para cadastrar, ou carregue os dados de exemplo.</div>';}
+  else{
+    h+=`<div class="grid">
+    <div class="card"><div class="k">Valor gerado no mês</div><div class="v">${brl(V)}</div></div>
+    <div class="card"><div class="k">Horas trabalhadas</div><div class="v">${num(H)} h</div></div>
+    <div class="card"><div class="k">Geração por hora (equipe)</div><div class="v">${brl(team.avg)}</div></div>
+    <div class="card"><div class="k">Retorno sobre custo</div><div class="v">${cost?num(V/cost,2)+'x':'–'}</div></div></div>`;
+    // chart
+    const byDay={};ms.forEach(x=>Object.entries(x.m.days).forEach(([d,v])=>byDay[d]=(byDay[d]||0)+v));
+    const ds=Object.keys(byDay).sort(),mx=Math.max(1,...Object.values(byDay));
+    if(ds.length)h+=`<h2>Valor gerado por dia (equipe)</h2><div class="card"><div class="chart">${ds.map(d=>`<div title="${d.slice(8)}/${d.slice(5,7)}: ${brl(byDay[d])}" style="height:${byDay[d]/mx*100}%"></div>`).join('')}</div></div>`;
+    h+=`<h2>Desempenho por pessoa</h2><div class="sc"><table><tr><th>Funcionário</th><th>Por hora</th><th>Por dia</th><th>No mês</th><th>Projeção (22 dias)</th><th>Margem</th><th>vs mês ant.</th><th>Meta/h</th><th>Status</th></tr>`;
+    ms.forEach(({e,m})=>{const p=m.ph/e.goal;h+=`<tr><td><b>${e.name}</b><br><small style="color:var(--mut)">${e.role||''}</small></td><td>${brl(m.ph)}<div class="pb"><i style="width:${Math.min(100,p*100)}%"></i></div></td><td>${brl(m.pd)}</td><td>${brl(m.v)}</td><td>${brl(m.proj)}</td><td>${brl(m.margin)}</td><td>${vs(e,m)}</td><td>${brl(e.goal)}</td><td><span class="pill ${m.h?cls(p):'bad'}">${m.h?lbl(p):'Sem dados'}</span></td></tr>`});
+    h+='</table></div><h2>O que fazer para melhorar</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">';
+    ms.forEach(({e,m})=>{h+=`<div class="card rec"><h3>${e.name}<span class="pill ${m.h?cls(m.ph/e.goal):'bad'}">${m.h?num(m.ph/e.goal*100,0)+'% da meta':'Sem dados'}</span></h3><ul>${recs(e,m,team).map(r=>`<li>${r[1]}</li>`).join('')}</ul>${extra(e,m)}</div>`});
+    h+='</div>';
+    if(V&&gAvg&&team.avg<gAvg)h+=`<div class="card" style="margin-top:12px"><b>Equipe:</b> a geração média está ${brl(gAvg-team.avg)}/h abaixo da meta média. Ganhos costumam vir de processos (menos retrabalho e espera), não só de cobrar mais das pessoas.</div>`;
+  }
+  $('#resumo').innerHTML=h;
+  // lançamentos
+  const L=S.logs.filter(inMes).sort((a,b)=>a.date<b.date?1:-1);
+  const nm=id=>(S.emps.find(e=>e.id===id)||{name:'?'}).name;
+  metasHtml();
+  $('#ll').innerHTML=L.length?`<table><tr><th>Data</th><th>Funcionário</th><th>Horas</th><th>Valor</th><th>R$/h</th><th></th></tr>${L.map(l=>`<tr><td>${l.date.split('-').reverse().join('/')}</td><td>${nm(l.emp)}</td><td>${num(l.hours,2)}</td><td>${brl(l.value)}</td><td>${brl(l.value/l.hours)}</td><td><button class="x" data-dl="${l.id}" aria-label="Remover">×</button></td></tr>`).join('')}</table>`:'<div class="card empty">Nenhum registro neste mês.</div>';
+  $('#fl2').innerHTML=S.emps.length?`<table><tr><th>Nome</th><th>Função</th><th>Custo/h</th><th>Meta/h</th><th></th></tr>${S.emps.map(e=>`<tr><td>${e.name}</td><td>${e.role||'–'}</td><td>${brl(e.cost)}</td><td>${brl(e.goal)}</td><td><button class="x" data-de="${e.id}" aria-label="Remover">×</button></td></tr>`).join('')}</table>`:'<div class="card empty">Ninguém cadastrado ainda.</div>';
+}
+$('#tabs').onclick=e=>{const t=e.target.dataset.t;if(!t)return;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b===e.target));['resumo','lanc','metas','func'].forEach(s=>$('#'+s).classList.toggle('hid',s!==t))};
+$('#mes').onchange=render;
+$('#fl').onsubmit=e=>{e.preventDefault();if(!S.emps.length)return alert('Cadastre um funcionário primeiro.');S.logs.push({id:uid(),emp:$('#le').value,date:$('#ld').value,hours:+$('#lh').value,value:+$('#lv').value,qty:+$('#lq').value||0,q:+$('#lk').value||0,low:$('#lb').checked});save();['lh','lv','lq','ti','ts'].forEach(i=>$('#'+i).value='');$('#lk').value='';$('#lb').checked=false;render()};
+$('#ff').onsubmit=e=>{e.preventDefault();S.emps.push({id:uid(),name:$('#fn').value.trim(),role:$('#fr').value.trim(),cost:+$('#fc').value,goal:+$('#fg').value});save();e.target.reset();render()};
+document.body.addEventListener('click',e=>{
+  const d=e.target.dataset;
+  if(d.dl){S.logs=S.logs.filter(l=>l.id!==d.dl);save();render()}
+  if(d.dg){S.goals=S.goals.filter(x=>x.id!==d.dg);save();render()}
+  if(d.da){S.acts=S.acts.filter(x=>x.id!==d.da);save();render()}
+  if(d.de&&confirm('Remover este funcionário e seus registros?')){S.emps=S.emps.filter(x=>x.id!==d.de);S.logs=S.logs.filter(l=>l.emp!==d.de);save();render()}
+});
+$('#clr').onclick=()=>{if(confirm('Apagar todos os dados?')){S={emps:[],logs:[]};save();render()}};
+$('#demo').onclick=()=>{
+  const A=[{id:'a1',name:'Ana',role:'Vendas',cost:18,goal:60,base:72,drift:.01},{id:'a2',name:'Bruno',role:'Atendimento',cost:15,goal:50,base:46,drift:-.015},{id:'a3',name:'Carla',role:'Caixa',cost:14,goal:45,base:30,drift:0}];
+  S={emps:A.map(({base,drift,...e})=>e),logs:[]};
+  const [y,mo]=mes().split('-').map(Number);let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  for(let d=1;d<=28;d++){const dt=new Date(y,mo-1,d);if(dt.getDay()===0||dt.getDay()===6)continue;
+    A.forEach((a,i)=>{const h=7+Math.round(rnd()*3)+(i===1?1:0);const k=1+a.drift*d;const noise=a.id==='a3'?.55+rnd()*.9:.85+rnd()*.3;
+      S.logs.push({id:uid(),emp:a.id,date:`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`,hours:h,value:Math.round(h*a.base*k*noise)})})}
+  save();render();
+};
+$('#ad').value=today;
+$('#fm').onsubmit=e=>{e.preventDefault();const id=$('#me').value;if(!id)return;S.goals.push({id:uid(),emp:id,target:+$('#mt').value,due:$('#mp').value,created:today,base:rt(id,sh(today,-30),today)});save();e.target.reset();render()};
+$('#fa').onsubmit=e=>{e.preventDefault();if(!$('#ae').value)return;S.acts.push({id:uid(),emp:$('#ae').value,date:$('#ad').value,text:$('#at').value.replace(/[<>&]/g,'')});save();e.target.reset();$('#ad').value=today;render()};
+['ti','ts'].forEach(i=>$('#'+i).onchange=()=>{const a=$('#ti').value,b=$('#ts').value;if(a&&b){let m=(+b.slice(0,2)*60+ +b.slice(3))-(+a.slice(0,2)*60+ +a.slice(3));if(m<0)m+=1440;$('#lh').value=Math.round(m/15)/4}});
+$('#ig').checked=!!S.ign;$('#ig').onchange=e=>{S.ign=e.target.checked;save();render()};
+$('#pr').onclick=()=>{try{window.print()}catch(e){alert('Use Ctrl+P para imprimir ou salvar em PDF.')}};
+const dl=(n,t,m)=>{try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()}catch(e){}};
+$('#exc').onclick=()=>{const nm=id=>(S.emps.find(e=>e.id===id)||{name:''}).name;const t='funcionario;data;horas;valor;quantidade;qualidade;baixo_movimento\n'+S.logs.map(l=>[nm(l.emp),l.date,l.hours,l.value,l.qty||'',l.q||'',l.low?1:0].join(';')).join('\n');$('#tx').value=t;dl('lancamentos.csv',t,'text/csv')};
+$('#exj').onclick=()=>{const t=JSON.stringify(S);$('#tx').value=t;dl('backup.json',t,'application/json')};
+$('#fi').onchange=e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=()=>{$('#tx').value=r.result};r.readAsText(f)}};
+$('#imc').onclick=()=>{const t=$('#tx').value.trim();if(!t)return;
+  if(t[0]==='{'){try{const o=JSON.parse(t);if(!o.emps||!o.logs)throw 0;S=o;save();render();return alert('Backup restaurado.')}catch(e){return alert('JSON inválido.')}}
+  const L=t.split('\n'),sep=L[0].includes(';')?';':',',f=x=>parseFloat(String(x).replace(',','.'))||0;let n=0;
+  L.slice(1).filter(r=>r.trim()).forEach(r=>{const c=r.split(sep).map(x=>x.replace(/[<>&]/g,'').trim());if(!c[0])return;
+    let e=S.emps.find(x=>x.name.toLowerCase()===c[0].toLowerCase());if(!e){e={id:uid(),name:c[0],role:'',cost:0,goal:50};S.emps.push(e)}
+    if(c[1]&&c[1][2]==='/')c[1]=c[1].split('/').reverse().join('-');
+    if(c[1]&&c[1].length===10&&f(c[2])>0){S.logs.push({id:uid(),emp:e.id,date:c[1],hours:f(c[2]),value:f(c[3]),qty:f(c[4]),q:f(c[5]),low:c[6]==='1'});n++}});
+  save();render();alert(n+' registros importados. Funcionários novos entram com custo R$ 0 e meta provisória de R$ 50/h: ajuste na aba Equipe.')};
+render();
+</script>
+</body>
+</html>
